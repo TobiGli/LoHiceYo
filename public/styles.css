@@ -141,16 +141,83 @@ a { color: var(--terracotta); }
 .person-toggle button.active.tobias { background: var(--terracotta-bg); border-color: var(--terracotta); color: var(--terracotta); }
 .person-toggle button.active.camila { background: var(--sage-bg); border-color: var(--sage); color: var(--sage); }
 
+.hint-edit { font-weight: 400; text-transform: none; color: var(--muted-2); font-size: 11.5px; }
+
 .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 9px; }
 .task-chip {
+  position: relative;
   display: flex; align-items: center; gap: 8px; text-align: left;
   border: 1.6px solid var(--border); background: var(--cream); border-radius: var(--radius-sm);
-  padding: 9px 10px; cursor: pointer; font-family: 'Nunito', sans-serif;
+  padding: 9px 30px 9px 10px; cursor: pointer; font-family: 'Nunito', sans-serif;
 }
 .task-chip .icon { width: 22px; height: 22px; color: var(--terracotta); flex: none; }
 .task-chip .txt { flex: 1; font-size: 12.5px; line-height: 1.2; }
 .task-chip .pts { font-size: 11.5px; font-weight: 700; color: #fff; border-radius: 999px; padding: 2px 7px; }
 .task-chip.selected { border-color: var(--terracotta); background: var(--terracotta-bg); box-shadow: 0 0 0 1px var(--terracotta) inset; }
+
+.task-edit-btn {
+  position: absolute; top: 5px; right: 5px; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 50%; background: rgba(255,255,255,.7); color: var(--muted-2);
+  cursor: pointer; padding: 0;
+}
+.task-edit-btn .icon { width: 12px; height: 12px; }
+.task-edit-btn:hover { background: #fff; color: var(--terracotta); }
+
+.add-task-btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; margin-top: 9px; padding: 10px; cursor: pointer;
+  border: 1.6px dashed var(--border-strong); border-radius: var(--radius-sm);
+  background: transparent; color: var(--muted); font-family: 'Nunito', sans-serif;
+  font-weight: 700; font-size: 12.5px;
+}
+.add-task-btn:hover { border-color: var(--terracotta); color: var(--terracotta); background: var(--terracotta-bg); }
+.add-task-btn .icon { width: 14px; height: 14px; }
+
+/* ---------- modal: nueva tarea ---------- */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(46, 38, 32, 0.45);
+  align-items: center; justify-content: center; padding: 18px; z-index: 60;
+}
+.modal-overlay.open { display: flex; }
+.modal-card {
+  background: var(--card); border-radius: var(--radius); border: 1.6px solid var(--border);
+  padding: 20px 22px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0,0,0,.25);
+}
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.modal-head h3 { margin: 0; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.modal-head h3 .icon { width: 19px; height: 19px; color: var(--terracotta); }
+.modal-close { border: none; background: none; color: var(--muted-2); cursor: pointer; padding: 4px; border-radius: 8px; }
+.modal-close:hover { background: var(--border); color: var(--ink); }
+.modal-close .icon { width: 18px; height: 18px; }
+.modal-card .subtitle { margin: 6px 0 16px; }
+
+.effort-toggle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.effort-toggle button {
+  border: 1.8px solid var(--border-strong); background: var(--cream); border-radius: var(--radius-sm);
+  padding: 10px 4px; font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 13px;
+  cursor: pointer; color: var(--muted);
+}
+.effort-toggle button.effort-bajo.active { background: #EEF5EF; border-color: var(--bajo); color: #4d6b56; }
+.effort-toggle button.effort-medio.active { background: var(--gold-bg); border-color: var(--medio); color: #8a6316; }
+.effort-toggle button.effort-alto.active { background: var(--terracotta-bg); border-color: var(--alto); color: var(--terracotta); }
+
+.modal-error {
+  display: none; font-size: 12.5px; color: #a3402a; background: #FBEAE4;
+  border: 1.4px solid #E9BCAC; border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 12px;
+}
+.modal-error.show { display: block; }
+
+.delete-task-btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; margin-top: 10px; padding: 11px; cursor: pointer;
+  border: 1.6px solid #E9BCAC; border-radius: var(--radius-sm);
+  background: transparent; color: #a3402a; font-family: 'Nunito', sans-serif;
+  font-weight: 700; font-size: 12.5px;
+}
+.delete-task-btn:hover { background: #FBEAE4; }
+.delete-task-btn .icon { width: 14px; height: 14px; }
 
 .submit-btn {
   width: 100%; border: none; border-radius: var(--radius-sm); padding: 13px;

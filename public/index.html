@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Puntos de Tareas del Hogar</title>
+<title>LoHiceYo</title>
 <meta name="theme-color" content="#B65C38">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon-192.png">
@@ -18,7 +18,7 @@
   <div class="header">
     <span class="icon" id="header-house"></span>
     <div>
-      <h1>Puntos de Tareas del Hogar</h1>
+      <h1>LoHiceYo</h1>
       <p>Tobías vs. Camila — ¿quién suma más puntos este mes?</p>
     </div>
     <div class="spacer"></div>
@@ -75,8 +75,11 @@
     </div>
 
     <div class="form-row">
-      <label>Tarea</label>
+      <label>Tarea <span class="hint-edit">(tocá el lápiz para editar una)</span></label>
       <div class="task-grid" id="task-grid"></div>
+      <button type="button" class="add-task-btn" id="add-task-btn">
+        <span class="icon" id="add-task-icon"></span> Agregar una tarea que no está en la lista
+      </button>
     </div>
 
     <div class="form-row">
@@ -120,6 +123,52 @@
 
   <div class="footer-note">Hecho con cariño para la casa 🧡 — que gane el/la que más se lo ganó.</div>
 
+</div>
+
+<!-- Modal: agregar tarea nueva al catálogo -->
+<div class="modal-overlay" id="new-task-overlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3><span class="icon" id="new-task-header-icon"></span> <span id="new-task-title">Nueva tarea</span></h3>
+      <button type="button" class="modal-close" id="new-task-close" aria-label="Cerrar">
+        <span class="icon" id="close-icon"></span>
+      </button>
+    </div>
+    <div class="subtitle" id="new-task-subtitle">Se agrega al catálogo con sus puntos y queda disponible para las próximas cargas.</div>
+
+    <div class="form-row">
+      <label>Nombre de la tarea</label>
+      <input type="text" id="new-task-name" maxlength="60" placeholder="Ej: Pasear al perro">
+    </div>
+
+    <div class="form-row">
+      <label>Esfuerzo</label>
+      <div class="effort-toggle">
+        <button type="button" class="effort-bajo" data-effort="bajo" data-suggested="2">Bajo</button>
+        <button type="button" class="effort-medio" data-effort="medio" data-suggested="3">Medio</button>
+        <button type="button" class="effort-alto" data-effort="alto" data-suggested="5">Alto</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Puntos</label>
+      <input type="number" id="new-task-points" min="1" max="20" step="1" placeholder="Ej: 3">
+    </div>
+
+    <div class="form-row">
+      <label>Ícono (opcional)</label>
+      <select id="new-task-icon"></select>
+    </div>
+
+    <div class="modal-error" id="new-task-error"></div>
+
+    <button class="submit-btn" id="new-task-submit" type="button" disabled>
+      <span class="icon" id="new-task-submit-icon"></span> <span id="new-task-submit-label">Agregar tarea</span>
+    </button>
+    <button class="delete-task-btn" id="new-task-delete" type="button" style="display:none;">
+      <span class="icon" id="delete-task-icon"></span> Eliminar esta tarea del catálogo
+    </button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>

@@ -1,6 +1,6 @@
 {
-  "name": "Puntos de Tareas del Hogar",
-  "short_name": "Puntos Hogar",
+  "name": "LoHiceYo",
+  "short_name": "LoHiceYo",
   "description": "Competencia de tareas del hogar entre Tobías y Camila, con notificaciones y resultado mensual.",
   "start_url": "/",
   "scope": "/",

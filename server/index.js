@@ -30,7 +30,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 init()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Puntos de Tareas del Hogar escuchando en el puerto ${PORT}`);
+      console.log(`LoHiceYo escuchando en el puerto ${PORT}`);
       scheduler.start();
     });
   })

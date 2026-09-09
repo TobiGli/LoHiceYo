@@ -2,7 +2,7 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener('push', (event) => {
-  let data = { title: 'Puntos de Tareas del Hogar', body: '', url: '/' };
+  let data = { title: 'LoHiceYo', body: '', url: '/' };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch (e) {

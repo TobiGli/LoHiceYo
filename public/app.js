@@ -1,11 +1,17 @@
 const PERSON_LABEL = { Tobias: 'Tobías', Camila: 'Camila' };
 const EFFORT_COLOR = { bajo: '#8FAE97', medio: '#D3A248', alto: '#B65C38' };
+const ICON_LABELS = {
+  plate: 'Plato', trash: 'Basura', plant: 'Planta', box: 'Caja / orden', clothes: 'Ropa doblada',
+  bed: 'Cama', broom: 'Escoba', vacuum: 'Aspiradora', washer: 'Lavarropas', cart: 'Carrito de compras',
+  iron: 'Plancha', window: 'Ventana', sponge: 'Esponja', pot: 'Olla', bath: 'Baño', default: 'Genérico',
+};
 
 const state = {
   month: monthInputValue(new Date()),
   tasks: [],
   selectedPerson: null,
   selectedTaskId: null,
+  newTaskEffort: null,
 };
 
 // ---------- helpers ----------
@@ -57,6 +63,21 @@ setIcon('submit-icon', 'plus');
 setIcon('list-icon', 'list');
 setIcon('trophy-icon', 'trophy');
 setIcon('legend-arrow', 'plus');
+setIcon('add-task-icon', 'plus');
+setIcon('new-task-header-icon', 'plus');
+setIcon('new-task-submit-icon', 'plus');
+setIcon('close-icon', 'close');
+
+// select de íconos del modal "nueva tarea"
+(function fillIconSelect() {
+  const sel = document.getElementById('new-task-icon');
+  for (const [key, label] of Object.entries(ICON_LABELS)) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+})();
 document.querySelector('[data-person="Tobias"] .icon').innerHTML = iconSvg('person');
 document.querySelector('[data-person="Camila"] .icon').innerHTML = iconSvg('person');
 
@@ -79,15 +100,23 @@ function renderTaskGrid() {
       <span class="icon">${iconSvg(t.icon)}</span>
       <span class="txt">${escapeHtml(t.name)}</span>
       <span class="pts" style="background:${EFFORT_COLOR[t.effort]}">${t.points} pt${t.points === 1 ? '' : 's'}</span>
+      <button type="button" class="task-edit-btn" title="Editar" aria-label="Editar tarea"><span class="icon">${iconSvg('pencil')}</span></button>
     `;
-    btn.addEventListener('click', () => {
-      state.selectedTaskId = t.id;
-      document.querySelectorAll('.task-chip').forEach((el) => el.classList.remove('selected'));
-      btn.classList.add('selected');
-      updateSubmitState();
+    btn.addEventListener('click', () => selectTask(t.id));
+    btn.querySelector('.task-edit-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEditTaskModal(t);
     });
     grid.appendChild(btn);
   }
+}
+
+function selectTask(taskId) {
+  state.selectedTaskId = taskId;
+  document.querySelectorAll('.task-chip').forEach((el) => {
+    el.classList.toggle('selected', Number(el.dataset.taskId) === Number(taskId));
+  });
+  updateSubmitState();
 }
 
 function renderLegend() {
@@ -104,6 +133,131 @@ function renderLegend() {
     grid.appendChild(item);
   }
 }
+
+// ---------- modal: agregar / editar tarea ----------
+const newTaskOverlay = document.getElementById('new-task-overlay');
+const newTaskTitle = document.getElementById('new-task-title');
+const newTaskSubtitle = document.getElementById('new-task-subtitle');
+const newTaskName = document.getElementById('new-task-name');
+const newTaskPoints = document.getElementById('new-task-points');
+const newTaskIconSelect = document.getElementById('new-task-icon');
+const newTaskError = document.getElementById('new-task-error');
+const newTaskSubmit = document.getElementById('new-task-submit');
+const newTaskSubmitLabel = document.getElementById('new-task-submit-label');
+const newTaskDelete = document.getElementById('new-task-delete');
+
+setIcon('delete-task-icon', 'trash2');
+
+function setModalEffort(effort) {
+  state.newTaskEffort = effort;
+  document.querySelectorAll('.effort-toggle button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.effort === effort);
+  });
+}
+
+function openNewTaskModal() {
+  state.editingTaskId = null;
+  newTaskTitle.textContent = 'Nueva tarea';
+  newTaskSubtitle.textContent = 'Se agrega al catálogo con sus puntos y queda disponible para las próximas cargas.';
+  newTaskSubmitLabel.textContent = 'Agregar tarea';
+  newTaskDelete.style.display = 'none';
+  newTaskName.value = '';
+  newTaskPoints.value = '';
+  newTaskIconSelect.value = 'default';
+  newTaskError.classList.remove('show');
+  setModalEffort(null);
+  updateNewTaskSubmitState();
+  newTaskOverlay.classList.add('open');
+  setTimeout(() => newTaskName.focus(), 50);
+}
+
+function openEditTaskModal(task) {
+  state.editingTaskId = task.id;
+  newTaskTitle.textContent = 'Editar tarea';
+  newTaskSubtitle.textContent = 'Los cambios se aplican para las próximas cargas — el historial ya guardado no cambia.';
+  newTaskSubmitLabel.textContent = 'Guardar cambios';
+  newTaskDelete.style.display = 'flex';
+  newTaskName.value = task.name;
+  newTaskPoints.value = task.points;
+  newTaskIconSelect.value = task.icon;
+  newTaskError.classList.remove('show');
+  setModalEffort(task.effort);
+  updateNewTaskSubmitState();
+  newTaskOverlay.classList.add('open');
+  setTimeout(() => newTaskName.focus(), 50);
+}
+
+function closeNewTaskModal() {
+  newTaskOverlay.classList.remove('open');
+}
+
+document.getElementById('add-task-btn').addEventListener('click', openNewTaskModal);
+document.getElementById('new-task-close').addEventListener('click', closeNewTaskModal);
+newTaskOverlay.addEventListener('click', (e) => {
+  if (e.target === newTaskOverlay) closeNewTaskModal();
+});
+
+document.querySelectorAll('.effort-toggle button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    setModalEffort(btn.dataset.effort);
+    if (!newTaskPoints.value) newTaskPoints.value = btn.dataset.suggested;
+    updateNewTaskSubmitState();
+  });
+});
+
+newTaskName.addEventListener('input', updateNewTaskSubmitState);
+newTaskPoints.addEventListener('input', updateNewTaskSubmitState);
+
+function updateNewTaskSubmitState() {
+  const pts = Number(newTaskPoints.value);
+  const ok = newTaskName.value.trim().length > 0 && state.newTaskEffort && pts >= 1 && pts <= 20;
+  newTaskSubmit.disabled = !ok;
+}
+
+newTaskSubmit.addEventListener('click', async () => {
+  newTaskError.classList.remove('show');
+  newTaskSubmit.disabled = true;
+  const payload = {
+    name: newTaskName.value.trim(),
+    effort: state.newTaskEffort,
+    points: Number(newTaskPoints.value),
+    icon: newTaskIconSelect.value,
+  };
+  try {
+    const saved = state.editingTaskId
+      ? await api(`/api/tasks/${state.editingTaskId}`, { method: 'PATCH', body: JSON.stringify(payload) })
+      : await api('/api/tasks', { method: 'POST', body: JSON.stringify(payload) });
+    await loadCatalog();
+    selectTask(saved.id);
+    closeNewTaskModal();
+    showToast(state.editingTaskId
+      ? `"${saved.name}" actualizada ✏️`
+      : `"${saved.name}" agregada al catálogo 🎉`);
+  } catch (e) {
+    newTaskError.textContent = e.message || 'No se pudo guardar la tarea.';
+    newTaskError.classList.add('show');
+  } finally {
+    updateNewTaskSubmitState();
+  }
+});
+
+newTaskDelete.addEventListener('click', async () => {
+  if (!state.editingTaskId) return;
+  if (!confirm('¿Eliminar esta tarea del catálogo? El historial ya cargado no se toca, pero no vas a poder elegirla de nuevo.')) return;
+  try {
+    await api(`/api/tasks/${state.editingTaskId}`, { method: 'DELETE' });
+    if (state.selectedTaskId === state.editingTaskId) {
+      state.selectedTaskId = null;
+      updateSubmitState();
+    }
+    await loadCatalog();
+    closeNewTaskModal();
+    showToast('Tarea eliminada del catálogo.');
+  } catch (e) {
+    newTaskError.textContent = e.message || 'No se pudo eliminar la tarea.';
+    newTaskError.classList.add('show');
+  }
+});
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({

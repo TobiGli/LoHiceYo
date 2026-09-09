@@ -47,16 +47,31 @@ router.patch('/:id', async (req, res) => {
   const existing = existingRows[0];
   if (!existing) return res.status(404).json({ error: 'Tarea no encontrada.' });
 
-  const name = req.body.name ?? existing.name;
+  const name = req.body.name != null ? String(req.body.name).trim() : existing.name;
   const effort = req.body.effort ?? existing.effort;
+  if (!['bajo', 'medio', 'alto'].includes(effort)) {
+    return res.status(400).json({ error: 'effort debe ser "bajo", "medio" o "alto".' });
+  }
   const points = req.body.points != null ? Math.round(Number(req.body.points)) : existing.points;
+  if (!Number.isFinite(points) || points < 1) {
+    return res.status(400).json({ error: 'Los puntos tienen que ser un número mayor a 0.' });
+  }
   const icon = req.body.icon ?? existing.icon;
   const active = req.body.active != null ? (req.body.active ? 1 : 0) : existing.active;
 
-  await db.execute({
-    sql: 'UPDATE tasks_catalog SET name=?, effort=?, points=?, icon=?, active=? WHERE id=?',
-    args: [name, effort, points, icon, active, id],
-  });
+  try {
+    await db.execute({
+      sql: 'UPDATE tasks_catalog SET name=?, effort=?, points=?, icon=?, active=? WHERE id=?',
+      args: [name, effort, points, icon, active, id],
+    });
+  } catch (err) {
+    if (String(err.message).includes('UNIQUE')) {
+      return res.status(409).json({ error: 'Ya existe otra tarea con ese nombre.' });
+    }
+    console.error(err);
+    return res.status(500).json({ error: 'No se pudo guardar los cambios.' });
+  }
+
   const { rows } = await db.execute({ sql: 'SELECT * FROM tasks_catalog WHERE id = ?', args: [id] });
   res.json(rows[0]);
 });
