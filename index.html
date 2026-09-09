@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LoHiceYo</title>
+<meta name="theme-color" content="#B65C38">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="header">
+    <span class="icon" id="header-house"></span>
+    <div>
+      <h1>LoHiceYo</h1>
+      <p>Tobías vs. Camila — ¿quién suma más puntos este mes?</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="bell-btn" id="bell-btn" type="button">
+      <span class="icon" id="bell-icon"></span>
+      <span id="bell-label">Notificaciones</span>
+    </button>
+  </div>
+
+  <!-- Resumen del mes -->
+  <div class="card">
+    <div class="month-row">
+      <h2><span class="icon" id="calendar-icon"></span> Resumen del mes</h2>
+      <div class="month-picker">
+        <input type="month" id="month-input">
+      </div>
+    </div>
+
+    <div class="score-bar">
+      <div class="score-side tobias">
+        <div class="name">Tobías</div>
+        <div class="pts" id="pts-tobias">0</div>
+      </div>
+      <div class="score-vs">VS</div>
+      <div class="score-side camila">
+        <div class="name">Camila</div>
+        <div class="pts" id="pts-camila">0</div>
+      </div>
+    </div>
+    <div class="progress"><div class="p-tobias" id="bar-tobias"></div><div class="p-camila" id="bar-camila"></div></div>
+
+    <span class="status-pill" id="status-pill"></span>
+    <div class="defines-on" id="defines-on" style="margin-top:8px;"></div>
+
+    <div id="winner-banner" style="display:none;"></div>
+  </div>
+
+  <!-- Cargar tarea -->
+  <div class="card">
+    <h2><span class="icon" id="plus-icon"></span> Cargar tarea</h2>
+    <div class="subtitle">Anotá quién hizo qué y cuándo. Al guardar, se avisa por notificación.</div>
+
+    <div class="form-row">
+      <label>¿Quién la hizo?</label>
+      <div class="person-toggle">
+        <button type="button" class="tobias" data-person="Tobias"><span class="icon"></span>Tobías</button>
+        <button type="button" class="camila" data-person="Camila"><span class="icon"></span>Camila</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Fecha</label>
+      <input type="date" id="entry-date">
+    </div>
+
+    <div class="form-row">
+      <label>Tarea <span class="hint-edit">(tocá el lápiz para editar una)</span></label>
+      <div class="task-grid" id="task-grid"></div>
+      <button type="button" class="add-task-btn" id="add-task-btn">
+        <span class="icon" id="add-task-icon"></span> Agregar una tarea que no está en la lista
+      </button>
+    </div>
+
+    <div class="form-row">
+      <label>Comentario (opcional)</label>
+      <textarea id="entry-comment" placeholder="Ej: compra grande del mes"></textarea>
+    </div>
+
+    <button class="submit-btn" id="submit-entry" type="button" disabled>
+      <span class="icon" id="submit-icon"></span> Guardar y avisar
+    </button>
+  </div>
+
+  <!-- Historial del mes -->
+  <div class="card">
+    <h2><span class="icon" id="list-icon"></span> Historial de este mes</h2>
+    <div class="subtitle">Se puede borrar una carga hecha por error.</div>
+    <div id="entries-list"></div>
+  </div>
+
+  <!-- Tabla de puntos -->
+  <div class="card">
+    <button class="toggle-btn" id="legend-toggle" type="button">
+      <span class="icon" id="legend-arrow"></span> Ver tabla de puntos
+    </button>
+    <div class="section-toggle-body" id="legend-body">
+      <div class="tier-key" style="margin-top:14px;">
+        <span><i class="dot" style="background:#8FAE97"></i>Esfuerzo bajo</span>
+        <span><i class="dot" style="background:#D3A248"></i>Esfuerzo medio</span>
+        <span><i class="dot" style="background:#B65C38"></i>Esfuerzo alto</span>
+      </div>
+      <div class="legend-grid" id="legend-grid"></div>
+    </div>
+  </div>
+
+  <!-- Resultados anteriores -->
+  <div class="card" id="resultados">
+    <h2><span class="icon" id="trophy-icon"></span> Resultados por mes</h2>
+    <div class="subtitle">El resultado de cada mes se define el último día y queda guardado acá.</div>
+    <div id="results-list"></div>
+  </div>
+
+  <div class="footer-note">Hecho con cariño para la casa 🧡 — que gane el/la que más se lo ganó.</div>
+
+</div>
+
+<!-- Modal: agregar tarea nueva al catálogo -->
+<div class="modal-overlay" id="new-task-overlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3><span class="icon" id="new-task-header-icon"></span> <span id="new-task-title">Nueva tarea</span></h3>
+      <button type="button" class="modal-close" id="new-task-close" aria-label="Cerrar">
+        <span class="icon" id="close-icon"></span>
+      </button>
+    </div>
+    <div class="subtitle" id="new-task-subtitle">Se agrega al catálogo con sus puntos y queda disponible para las próximas cargas.</div>
+
+    <div class="form-row">
+      <label>Nombre de la tarea</label>
+      <input type="text" id="new-task-name" maxlength="60" placeholder="Ej: Pasear al perro">
+    </div>
+
+    <div class="form-row">
+      <label>Esfuerzo</label>
+      <div class="effort-toggle">
+        <button type="button" class="effort-bajo" data-effort="bajo" data-suggested="2">Bajo</button>
+        <button type="button" class="effort-medio" data-effort="medio" data-suggested="3">Medio</button>
+        <button type="button" class="effort-alto" data-effort="alto" data-suggested="5">Alto</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Puntos</label>
+      <input type="number" id="new-task-points" min="1" max="20" step="1" placeholder="Ej: 3">
+    </div>
+
+    <div class="form-row">
+      <label>Ícono (opcional)</label>
+      <select id="new-task-icon"></select>
+    </div>
+
+    <div class="modal-error" id="new-task-error"></div>
+
+    <button class="submit-btn" id="new-task-submit" type="button" disabled>
+      <span class="icon" id="new-task-submit-icon"></span> <span id="new-task-submit-label">Agregar tarea</span>
+    </button>
+    <button class="delete-task-btn" id="new-task-delete" type="button" style="display:none;">
+      <span class="icon" id="delete-task-icon"></span> Eliminar esta tarea del catálogo
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/icons-lib.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

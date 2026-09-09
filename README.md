@@ -1,23 +1,29 @@
-# Puntos de Tareas del Hogar
+# LoHiceYo
 
-App web para la competencia mensual de tareas del hogar entre **Tobías** y **Camila**: cada tarea suma puntos según el esfuerzo, se manda una notificación cada vez que alguien carga una, y el **resultado del mes queda definido automáticamente el último día de cada mes**.
+**LoHiceYo** es una app web para llevar el puntaje de las tareas del hogar entre dos personas — en este caso, **Tobías** y **Camila**. Cada tarea del catálogo tiene un puntaje según su esfuerzo (bajo, medio o alto); cada vez que alguien hace algo lo carga en la app, suma sus puntos, y al final del mes se sabe quién ganó. El mismo estilo visual (colores, tipografía e íconos dibujados a mano) del diseño original se mantiene en toda la app.
 
-Mismo estilo visual (colores, tipografía e íconos) que el diseño original en Claude.
+Lo que hace, en criollo:
 
-## Stack elegido
+- **Catálogo de tareas con puntos**, editable desde la propia interfaz: se pueden agregar tareas nuevas, cambiarles el nombre/esfuerzo/puntos/ícono, o sacarlas del catálogo (sin borrar el historial de cargas viejas).
+- **Carga rápida de una tarea hecha**: quién la hizo, qué tarea, qué día, y un comentario opcional.
+- **Resumen en vivo del mes**: puntos de cada uno, quién va ganando, y una barra de progreso.
+- **Notificaciones push al celular** cada vez que alguien carga una tarea, para que el otro se entere al toque.
+- **Resultado del mes automático**: el último día de cada mes queda definido y guardado quién ganó, con notificación tipo "🏆 Resultado de septiembre: ganó Camila con 34 puntos". El historial de meses cerrados queda a mano en la app.
 
-Un único servicio Node.js, pensado para desplegarse fácil y gratis en Render:
+## Stack
 
-- **Backend:** Node.js + Express (API REST simple).
-- **Base de datos:** SQLite, alojada gratis en [Turso](https://turso.tech) (`@libsql/client`). Es el mismo motor SQLite de siempre, pero vive en la nube en vez de en el disco de Render — así los datos **no se borran** aunque el plan de Render sea gratis. Ver la sección **"Crear la base de datos (Turso)"** más abajo.
-- **Frontend:** HTML/CSS/JS simple (sin build, sin framework) servido como archivos estáticos por el mismo Express. Menos piezas, deploy más simple.
-- **Notificaciones:** Web Push (estándar del navegador, gratis, sin depender de Firebase ni de ningún servicio pago). Funciona como notificación de verdad en el celular si se instala la app ("Agregar a pantalla de inicio").
-- **Resultado mensual automático:** un cron interno (`node-cron`) que corre todos los días a las 22:00, más un endpoint (`/api/cron/finalize`) para engancharlo a un cron externo gratuito como respaldo (necesario en el plan gratis de Render, que "duerme" el servicio — ver más abajo).
+Pensada para ser un único servicio, fácil y gratis de correr y de desplegar:
+
+- **Backend:** Node.js + Express, una API REST chica.
+- **Base de datos:** SQLite alojada gratis en [Turso](https://turso.tech) (vía `@libsql/client`). Es el mismo SQLite de siempre pero corriendo en la nube en vez del disco del servidor — así los datos no se pierden aunque el hosting sea gratis y el servicio se reinicie. Este repo ya viene con una base de Turso creada y sus credenciales cargadas en `.env`.
+- **Frontend:** HTML/CSS/JS simple, sin build ni framework, servido como archivos estáticos por el mismo Express.
+- **Notificaciones:** Web Push, el estándar del navegador — gratis, sin Firebase ni servicios pagos de por medio. Para que funcionen como notificación de verdad en el celular (sobre todo en iPhone) conviene instalar la app a la pantalla de inicio.
+- **Cierre de mes:** un cron interno (`node-cron`) que corre todos los días y se fija si es el último día del mes, más un endpoint (`/api/cron/finalize`) pensado para engancharlo a un cron externo gratuito como respaldo — útil porque el plan gratis de Render "duerme" el servicio y puede no estar despierto justo a esa hora.
 
 ## Estructura del proyecto
 
 ```
-puntos-hogar-app/
+lohiceyo/
 ├── server/
 │   ├── index.js          # servidor Express
 │   ├── db.js              # conexión a Turso (o SQLite local) + catálogo por defecto
@@ -35,88 +41,43 @@ puntos-hogar-app/
 └── .env.example
 ```
 
-## 0. Base de datos (Turso) — ya configurada
+## Cómo correrla
 
-Este repo ya incluye un archivo `.env` con la base de Turso creada y sus credenciales (`TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`), más claves VAPID para las notificaciones y un `CRON_SECRET` ya generados. `.env` está en `.gitignore`, así que **no se sube a GitHub** al hacer `git push` — solo queda en tu computadora. Para Render, esas mismas variables hay que pegarlas a mano en el panel (paso 3), porque Render no lee el archivo `.env`.
-
-No hace falta crear tablas a mano: la app las crea solas la primera vez que arranca.
-
-Si en algún momento necesitás rotar el token (por ejemplo, si se filtró): entrá a [turso.tech](https://turso.tech) → tu base → generá un **Auth Token** nuevo → actualizalo en tu `.env` local y en las variables de entorno de Render.
-
-## 1. Correrlo en tu computadora (opcional, para probar antes de subir)
+El repo ya viene con todo lo necesario configurado en `.env` — la base de Turso, las claves VAPID de notificaciones y el secreto del cron. Con eso, correrla local es instalar dependencias y arrancar el servidor:
 
 ```bash
 npm install
 npm start
 ```
 
-Ya está — no hace falta tocar nada más, `.env` ya tiene todo cargado. Abrí `http://localhost:3000`.
+Y abrir `http://localhost:3000`. No hace falta crear tablas ni tocar la base a mano: la app las crea solas la primera vez que arranca.
 
-## 2. Subir a GitHub
+Para subirla a un repositorio de GitHub, el proyecto ya tiene `git init` y un primer commit hechos — alcanza con agregar el `remote` de tu repositorio y hacer `push`. El `.env` con las credenciales reales está en `.gitignore`, así que nunca se sube a GitHub; solo queda en tu computadora.
 
-```bash
-git init
-git add .
-git commit -m "App de puntos de tareas del hogar"
-git branch -M main
-git remote add origin https://github.com/TU-USUARIO/TU-REPO.git
-git push -u origin main
-```
+Para desplegarla en producción, este repo incluye un `render.yaml` (Blueprint de [Render](https://render.com)) listo para usar: Render lee ese archivo, propone el servicio `lohiceyo`, y solo pide pegar a mano los valores marcados como secretos (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, las claves VAPID y `CRON_SECRET`) — todos están en el `.env` de este repo, listos para copiar y pegar, porque Render no lee archivos `.env` directamente.
 
-(El repo ya viene con `git init` y el primer commit hecho — si lo preferís, solo agregá el `remote` y hacé `push`.)
+Si en algún momento hay que rotar el token de Turso (por ejemplo, si se filtró), se genera uno nuevo desde [turso.tech](https://turso.tech) → la base → **Auth Token**, y se actualiza tanto en el `.env` local como en las variables de entorno de Render.
 
-## 3. Deploy en Render
+### Por qué los datos no se pierden
 
-**Opción A — Blueprint (recomendada, usa el `render.yaml` incluido):**
+Antes de mudar la base a Turso, esta app guardaba todo en el disco del propio servicio de Render, que en el plan gratis se borra en cada deploy o reinicio — el problema típico de correr algo gratis. Ahora la base vive aparte, en Turso, un SQLite alojado en la nube con un plan gratis pensado justo para este tipo de uso liviano (dos personas cargando algunas tareas por día), sin fecha de borrado. Render puede reiniciarse o volver a desplegar las veces que quiera: la base sigue intacta en Turso.
 
-1. En [render.com](https://dashboard.render.com), **New +** → **Blueprint**.
-2. Elegí tu repositorio de GitHub.
-3. Render va a leer `render.yaml` y proponer el servicio `puntos-tareas-hogar`. Confirmá.
-4. Te va a pedir los valores de las variables marcadas `sync: false`: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `CRON_SECRET`. Abrí el archivo `.env` de este repo (no se subió a GitHub) y copiá cada valor tal cual está ahí.
-5. Deploy. En unos minutos vas a tener una URL tipo `https://puntos-tareas-hogar.onrender.com`.
+### Notificaciones
 
-**Opción B — manual:** New + → Web Service → conectar el repo → Build Command `npm install`, Start Command `npm start` → agregar las variables de entorno de `.env.example` a mano (incluidas `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`).
+En cuanto alguien activa la campanita en la app (una vez por dispositivo, pidiendo permiso de notificaciones) y otra persona carga una tarea, el resto de los dispositivos suscriptos reciben un push al instante. Cada persona activa las notificaciones en su propio celular la primera vez que entra, y sin las claves VAPID configuradas la app funciona igual pero no manda notificaciones.
 
-### Sobre los datos: por qué esto sí es gratis y persistente
+En iPhone, Safari solo permite notificaciones push si la app está agregada a la pantalla de inicio (compartir → "Agregar a pantalla de inicio") y se abre desde ahí — es una limitación de Apple, no de la app. En Android funciona directo desde Chrome sin necesidad de instalarla, aunque instalarla también da una experiencia más de app.
 
-Antes esta app guardaba la base de datos en el propio disco de Render, que en el plan gratis se borra en cada deploy o reinicio. Ahora la base vive en Turso, un servicio aparte pensado justo para esto: SQLite en la nube, con un plan gratis que **no tiene fecha de borrado ni límite de tiempo** para un uso como este (dos personas cargando algunas tareas por día). Render puede reiniciarse las veces que quiera — la base sigue estando en Turso, intacta.
+### Cierre de mes
 
-Lo único que hay que tener en cuenta es no perder el `TURSO_AUTH_TOKEN`: si algún día lo revocás desde el panel de Turso, hay que generar uno nuevo y actualizarlo en Render (Settings → Environment).
+Todos los días a una hora fija (configurable por la variable `TZ`), el servidor revisa si hoy es el último día del mes; si lo es, calcula el total de puntos de cada uno, guarda quién ganó y manda la notificación con el resultado. Como el plan gratis de Render duerme el servicio después de un rato sin visitas, conviene además apuntar un cron externo gratuito (por ejemplo [cron-job.org](https://cron-job.org)) a `POST /api/cron/finalize` con el header `x-cron-secret` una vez por día, como respaldo — correrlo todos los días es seguro, porque si no es fin de mes o el mes ya estaba cerrado, no hace nada.
 
-### Notificaciones cada vez que alguien carga una tarea
-
-Ya vienen andando: en cuanto alguien activa el botón de la campanita en la app (una vez por dispositivo) y otra persona carga una tarea, el resto de los dispositivos suscriptos reciben un push.
-
-Detalles a tener en cuenta:
-
-- **Se necesitan las claves VAPID** configuradas (paso de arriba) — sin eso, el servidor arranca igual pero no manda notificaciones.
-- **iPhone:** Safari solo permite notificaciones push si la app está agregada a la pantalla de inicio (compartir → "Agregar a pantalla de inicio") y se abre desde ahí, no desde el navegador. Es una limitación de Apple, no de esta app.
-- **Android:** funciona directo desde Chrome, no hace falta instalarla (aunque instalarla con "Agregar a pantalla de inicio" también anda y da una experiencia más de app).
-- Cada persona activa las notificaciones en **su propio** celular la primera vez que entra.
-
-### Resultado del mes, el último día del mes
-
-Todos los días a las 22:00 (hora de Argentina, por la variable `TZ`), el servidor se fija si hoy es el último día del mes. Si lo es, calcula el total de puntos de cada uno, guarda quién ganó, y manda una notificación tipo *"🏆 Resultado de septiembre: ganó Camila con 34 puntos"*.
-
-**Ojo con el plan gratis de Render:** el servicio se "duerme" después de 15 minutos sin visitas, y se despierta recién cuando alguien entra a la app. Si a las 22:00 nadie entró, el cron interno no llega a correr ese día. Para que el cierre de mes sea confiable en el plan gratis, hay dos caminos (se puede usar cualquiera de los dos, o ambos):
-
-1. **Más simple: un cron externo gratuito** que visite la app y dispare el cierre. Por ejemplo con [cron-job.org](https://cron-job.org) (gratis):
-   - Creá una tarea nueva.
-   - URL: `https://TU-APP.onrender.com/api/cron/finalize`
-   - Método: `POST`
-   - Header: `x-cron-secret: EL-VALOR-QUE-PUSISTE-EN-CRON_SECRET`
-   - Frecuencia: una vez por día (por ejemplo, todos los días a las 23:00 hora Argentina).
-   - Es seguro que se ejecute todos los días: si no es el último día del mes, o si el mes ya estaba cerrado, no hace nada.
-2. O pasar el servicio al plan pago (no se duerme nunca), y con eso alcanza el cron interno.
-
-### Probar el cierre de mes sin esperar a fin de mes
+Para probar el cierre sin esperar a fin de mes, se puede forzar puntualmente:
 
 ```bash
 curl -X POST https://TU-APP.onrender.com/api/cron/finalize?force=1&month=2026-09 \
   -H "x-cron-secret: EL-VALOR-DE-CRON_SECRET"
 ```
-
-Esto recalcula y sobreescribe el resultado de ese mes (útil para probar la notificación), sin esperar al día 30.
 
 ## API
 
@@ -124,6 +85,8 @@ Esto recalcula y sobreescribe el resultado de ese mes (útil para probar la noti
 |---|---|---|
 | GET | `/api/tasks` | catálogo de tareas y sus puntos |
 | POST | `/api/tasks` | agregar una tarea nueva al catálogo |
+| PATCH | `/api/tasks/:id` | editar nombre, esfuerzo, puntos o ícono de una tarea |
+| DELETE | `/api/tasks/:id` | borrar (soft-delete) una tarea del catálogo |
 | GET | `/api/entries?month=YYYY-MM` | tareas cargadas en ese mes |
 | POST | `/api/entries` | cargar una tarea hecha (dispara la notificación) |
 | DELETE | `/api/entries/:id` | borrar una carga |
@@ -132,8 +95,7 @@ Esto recalcula y sobreescribe el resultado de ese mes (útil para probar la noti
 | POST | `/api/push/subscribe` | guardar la suscripción push de un dispositivo |
 | POST | `/api/cron/finalize` | fuerza el chequeo/cierre de mes (requiere `x-cron-secret`) |
 
-## Ideas para más adelante (no incluidas)
+## Ideas para más adelante
 
 - Login por PIN para que cada uno solo pueda cargar tareas a su propio nombre.
-- Editar el catálogo de tareas desde la interfaz (hoy se puede vía API, `POST/PATCH /api/tasks`).
 - Racha de días seguidos, medallas, etc.

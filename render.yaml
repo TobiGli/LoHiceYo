@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: puntos-tareas-hogar
+    name: lohiceyo
     runtime: node
     plan: free
     buildCommand: npm install
