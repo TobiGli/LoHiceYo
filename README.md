@@ -35,30 +35,22 @@ puntos-hogar-app/
 └── .env.example
 ```
 
-## 0. Crear la base de datos (Turso, gratis y no se borra nunca)
+## 0. Base de datos (Turso) — ya configurada
 
-1. Entrá a [turso.tech](https://turso.tech) y creá una cuenta gratis (podés entrar directo con GitHub).
-2. Creá una base de datos nueva (botón **Create Database**). Cualquier nombre sirve, por ejemplo `puntos-hogar`. Elegí la región más cercana (por ejemplo, alguna de Sudamérica o EE.UU.).
-3. Ya creada, entrá a la base y buscá:
-   - **URL** de la base (empieza con `libsql://...`) → esto va en `TURSO_DATABASE_URL`.
-   - Un **Auth Token** (botón para crear/generar uno) → esto va en `TURSO_AUTH_TOKEN`.
-4. Guardá esos dos valores, los vas a necesitar para correr la app local y en Render.
+Este repo ya incluye un archivo `.env` con la base de Turso creada y sus credenciales (`TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`), más claves VAPID para las notificaciones y un `CRON_SECRET` ya generados. `.env` está en `.gitignore`, así que **no se sube a GitHub** al hacer `git push` — solo queda en tu computadora. Para Render, esas mismas variables hay que pegarlas a mano en el panel (paso 3), porque Render no lee el archivo `.env`.
 
 No hace falta crear tablas a mano: la app las crea solas la primera vez que arranca.
 
-*(Si en algún momento no ponés estas dos variables, la app sigue funcionando pero guardando todo en un archivo local — útil solo para probar en tu compu, se pierde en Render.)*
+Si en algún momento necesitás rotar el token (por ejemplo, si se filtró): entrá a [turso.tech](https://turso.tech) → tu base → generá un **Auth Token** nuevo → actualizalo en tu `.env` local y en las variables de entorno de Render.
 
 ## 1. Correrlo en tu computadora (opcional, para probar antes de subir)
 
 ```bash
 npm install
-cp .env.example .env
-# completá TURSO_DATABASE_URL y TURSO_AUTH_TOKEN en .env con lo que sacaste en el paso 0
-npm run generate-vapid-keys   # copiá las 2 líneas que imprime a tu .env
 npm start
 ```
 
-Abrí `http://localhost:3000`.
+Ya está — no hace falta tocar nada más, `.env` ya tiene todo cargado. Abrí `http://localhost:3000`.
 
 ## 2. Subir a GitHub
 
@@ -80,10 +72,7 @@ git push -u origin main
 1. En [render.com](https://dashboard.render.com), **New +** → **Blueprint**.
 2. Elegí tu repositorio de GitHub.
 3. Render va a leer `render.yaml` y proponer el servicio `puntos-tareas-hogar`. Confirmá.
-4. Te va a pedir los valores de las variables marcadas `sync: false`:
-   - `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`: los del paso 0.
-   - `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY`: corré `npm run generate-vapid-keys` en tu compu y pegá lo que te da.
-   - `CRON_SECRET`: inventá cualquier texto largo random (por ejemplo, generalo en https://1password.com/password-generator o con `openssl rand -hex 24`).
+4. Te va a pedir los valores de las variables marcadas `sync: false`: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `CRON_SECRET`. Abrí el archivo `.env` de este repo (no se subió a GitHub) y copiá cada valor tal cual está ahí.
 5. Deploy. En unos minutos vas a tener una URL tipo `https://puntos-tareas-hogar.onrender.com`.
 
 **Opción B — manual:** New + → Web Service → conectar el repo → Build Command `npm install`, Start Command `npm start` → agregar las variables de entorno de `.env.example` a mano (incluidas `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`).
