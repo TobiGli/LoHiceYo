@@ -1,5 +1,5 @@
 const webpush = require('web-push');
-const db = require('./db');
+const { db } = require('./db');
 
 const PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
@@ -23,25 +23,25 @@ if (PUBLIC_KEY && PRIVATE_KEY) {
 async function sendNotificationToAll(payload) {
   if (!enabled) return { sent: 0, total: 0, skipped: true };
 
-  const subs = db.prepare('SELECT * FROM push_subscriptions').all();
+  const { rows } = await db.execute('SELECT * FROM push_subscriptions');
   const data = JSON.stringify(payload);
   let sent = 0;
 
-  for (const row of subs) {
+  for (const row of rows) {
     try {
       const subscription = JSON.parse(row.subscription);
       await webpush.sendNotification(subscription, data);
       sent++;
     } catch (err) {
       if (err.statusCode === 404 || err.statusCode === 410) {
-        db.prepare('DELETE FROM push_subscriptions WHERE id = ?').run(row.id);
+        await db.execute({ sql: 'DELETE FROM push_subscriptions WHERE id = ?', args: [row.id] });
       } else {
         console.error('[push] error enviando notificación:', err.statusCode, err.message);
       }
     }
   }
 
-  return { sent, total: subs.length };
+  return { sent, total: rows.length };
 }
 
 module.exports = { sendNotificationToAll, publicKey: PUBLIC_KEY, enabled };

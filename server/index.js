@@ -3,7 +3,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 
-require('./db'); // asegura que la base y el catálogo existan antes de levantar rutas
+const { init } = require('./db');
 
 const tasksRouter = require('./routes/tasks');
 const entriesRouter = require('./routes/entries');
@@ -27,7 +27,14 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-app.listen(PORT, () => {
-  console.log(`Puntos de Tareas del Hogar escuchando en el puerto ${PORT}`);
-  scheduler.start();
-});
+init()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Puntos de Tareas del Hogar escuchando en el puerto ${PORT}`);
+      scheduler.start();
+    });
+  })
+  .catch((err) => {
+    console.error('No se pudo inicializar la base de datos:', err);
+    process.exit(1);
+  });

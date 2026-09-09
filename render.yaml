@@ -2,14 +2,16 @@ services:
   - type: web
     name: puntos-tareas-hogar
     runtime: node
-    plan: free # cambiar a "starter" si agregás el disco persistente (ver README)
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: TZ
         value: America/Argentina/Buenos_Aires
-      - key: DB_PATH
-        value: ./data/tasks.db
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
       - key: VAPID_PUBLIC_KEY
         sync: false
       - key: VAPID_PRIVATE_KEY
@@ -18,11 +20,3 @@ services:
         value: mailto:tu-email@ejemplo.com
       - key: CRON_SECRET
         sync: false
-    # Con el plan free, "data/" se borra en cada deploy o reinicio del servicio.
-    # Para que el historial y los puntos NO se pierdan, subí a un plan pago con
-    # disco persistente y descomentá este bloque (ver README, sección "Guardar
-    # los datos de verdad"):
-    # disk:
-    #   name: puntos-hogar-data
-    #   mountPath: /var/data
-    #   sizeGB: 1

@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../db');
+const { db } = require('../db');
 const push = require('../push');
 
 const router = express.Router();
@@ -11,24 +11,25 @@ router.get('/vapid-public-key', (req, res) => {
 });
 
 // Guarda (o actualiza) la suscripción push de este dispositivo.
-router.post('/subscribe', (req, res) => {
+router.post('/subscribe', async (req, res) => {
   const { subscription, person } = req.body;
   if (!subscription || !subscription.endpoint) {
     return res.status(400).json({ error: 'Falta la suscripción.' });
   }
-  db.prepare(
-    `INSERT INTO push_subscriptions (endpoint, subscription, person)
-     VALUES (?, ?, ?)
-     ON CONFLICT(endpoint) DO UPDATE SET subscription = excluded.subscription, person = excluded.person`
-  ).run(subscription.endpoint, JSON.stringify(subscription), person || null);
+  await db.execute({
+    sql: `INSERT INTO push_subscriptions (endpoint, subscription, person)
+          VALUES (?, ?, ?)
+          ON CONFLICT(endpoint) DO UPDATE SET subscription = excluded.subscription, person = excluded.person`,
+    args: [subscription.endpoint, JSON.stringify(subscription), person || null],
+  });
   res.status(201).json({ ok: true });
 });
 
 // Da de baja las notificaciones en este dispositivo.
-router.post('/unsubscribe', (req, res) => {
+router.post('/unsubscribe', async (req, res) => {
   const { endpoint } = req.body;
   if (!endpoint) return res.status(400).json({ error: 'Falta el endpoint.' });
-  db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(endpoint);
+  await db.execute({ sql: 'DELETE FROM push_subscriptions WHERE endpoint = ?', args: [endpoint] });
   res.json({ ok: true });
 });
 

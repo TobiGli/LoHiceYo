@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const db = require('./db');
+const { db } = require('./db');
 const { sendNotificationToAll } = require('./push');
 
 function pad(n) {
@@ -15,13 +15,22 @@ function isLastDayOfMonth(date) {
   return tomorrow.getMonth() !== date.getMonth();
 }
 
-function computeTotals(monthKey) {
-  const rows = db
-    .prepare(`SELECT person, COALESCE(SUM(points), 0) AS pts FROM entries WHERE substr(date, 1, 7) = ? GROUP BY person`)
-    .all(monthKey);
+async function computeTotals(monthKey) {
+  const { rows } = await db.execute({
+    sql: `SELECT person, COALESCE(SUM(points), 0) AS pts FROM entries WHERE substr(date, 1, 7) = ? GROUP BY person`,
+    args: [monthKey],
+  });
   const totals = { Tobias: 0, Camila: 0 };
-  for (const r of rows) totals[r.person] = r.pts;
+  for (const r of rows) totals[r.person] = Number(r.pts);
   return totals;
+}
+
+async function getMonthlyResult(monthKey) {
+  const { rows } = await db.execute({
+    sql: 'SELECT * FROM monthly_results WHERE month = ?',
+    args: [monthKey],
+  });
+  return rows[0] || null;
 }
 
 /**
@@ -30,27 +39,28 @@ function computeTotals(monthKey) {
  * calcularlo (salvo que se pase { force: true }, útil para pruebas).
  */
 async function finalizeMonth(monthKey, { force = false, notify = true } = {}) {
-  const existing = db.prepare('SELECT * FROM monthly_results WHERE month = ?').get(monthKey);
+  const existing = await getMonthlyResult(monthKey);
   if (existing && !force) {
     return { result: existing, created: false };
   }
 
-  const totals = computeTotals(monthKey);
+  const totals = await computeTotals(monthKey);
   let winner = 'Empate';
   if (totals.Tobias > totals.Camila) winner = 'Tobias';
   else if (totals.Camila > totals.Tobias) winner = 'Camila';
 
-  db.prepare(
-    `INSERT INTO monthly_results (month, tobias_points, camila_points, winner, finalized_at)
-     VALUES (@month, @tobias, @camila, @winner, datetime('now'))
-     ON CONFLICT(month) DO UPDATE SET
-       tobias_points = excluded.tobias_points,
-       camila_points = excluded.camila_points,
-       winner = excluded.winner,
-       finalized_at = excluded.finalized_at`
-  ).run({ month: monthKey, tobias: totals.Tobias, camila: totals.Camila, winner });
+  await db.execute({
+    sql: `INSERT INTO monthly_results (month, tobias_points, camila_points, winner, finalized_at)
+          VALUES (?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(month) DO UPDATE SET
+            tobias_points = excluded.tobias_points,
+            camila_points = excluded.camila_points,
+            winner = excluded.winner,
+            finalized_at = excluded.finalized_at`,
+    args: [monthKey, totals.Tobias, totals.Camila, winner],
+  });
 
-  const result = db.prepare('SELECT * FROM monthly_results WHERE month = ?').get(monthKey);
+  const result = await getMonthlyResult(monthKey);
 
   if (notify) {
     const label = winner === 'Empate' ? 'Empate 🤝' : `Ganó ${winner === 'Tobias' ? 'Tobías' : 'Camila'} 🏆`;

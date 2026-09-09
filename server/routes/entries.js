@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../db');
+const { db } = require('../db');
 const { sendNotificationToAll } = require('../push');
 
 const router = express.Router();
@@ -7,13 +7,14 @@ const router = express.Router();
 const PERSON_LABEL = { Tobias: 'Tobías', Camila: 'Camila' };
 
 // Lista las tareas cargadas en un mes (?month=YYYY-MM). Sin ?month, trae todo.
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { month } = req.query;
-  const rows = month
-    ? db
-        .prepare('SELECT * FROM entries WHERE substr(date, 1, 7) = ? ORDER BY date DESC, id DESC')
-        .all(month)
-    : db.prepare('SELECT * FROM entries ORDER BY date DESC, id DESC').all();
+  const { rows } = month
+    ? await db.execute({
+        sql: 'SELECT * FROM entries WHERE substr(date, 1, 7) = ? ORDER BY date DESC, id DESC',
+        args: [month],
+      })
+    : await db.execute('SELECT * FROM entries ORDER BY date DESC, id DESC');
   res.json(rows);
 });
 
@@ -28,17 +29,21 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'person debe ser "Tobias" o "Camila".' });
   }
 
-  const task = db.prepare('SELECT * FROM tasks_catalog WHERE id = ?').get(task_id);
+  const { rows: taskRows } = await db.execute({ sql: 'SELECT * FROM tasks_catalog WHERE id = ?', args: [task_id] });
+  const task = taskRows[0];
   if (!task) return res.status(404).json({ error: 'Esa tarea no existe en el catálogo.' });
 
-  const info = db
-    .prepare(
-      `INSERT INTO entries (date, person, task_id, task_name, icon, points, comment)
-       VALUES (?,?,?,?,?,?,?)`
-    )
-    .run(date, person, task.id, task.name, task.icon, task.points, comment ? String(comment).slice(0, 280) : null);
+  const ins = await db.execute({
+    sql: `INSERT INTO entries (date, person, task_id, task_name, icon, points, comment)
+          VALUES (?,?,?,?,?,?,?)`,
+    args: [date, person, task.id, task.name, task.icon, task.points, comment ? String(comment).slice(0, 280) : null],
+  });
 
-  const entry = db.prepare('SELECT * FROM entries WHERE id = ?').get(info.lastInsertRowid);
+  const { rows } = await db.execute({
+    sql: 'SELECT * FROM entries WHERE id = ?',
+    args: [Number(ins.lastInsertRowid)],
+  });
+  const entry = rows[0];
 
   res.status(201).json(entry);
 
@@ -52,11 +57,11 @@ router.post('/', async (req, res) => {
 });
 
 // Borra una tarea cargada por error.
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-  const existing = db.prepare('SELECT * FROM entries WHERE id = ?').get(id);
-  if (!existing) return res.status(404).json({ error: 'No se encontró esa carga.' });
-  db.prepare('DELETE FROM entries WHERE id = ?').run(id);
+  const { rows } = await db.execute({ sql: 'SELECT * FROM entries WHERE id = ?', args: [id] });
+  if (!rows[0]) return res.status(404).json({ error: 'No se encontró esa carga.' });
+  await db.execute({ sql: 'DELETE FROM entries WHERE id = ?', args: [id] });
   res.json({ ok: true });
 });
 
